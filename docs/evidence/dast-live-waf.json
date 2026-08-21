@@ -1,0 +1,27 @@
+[
+  {
+    "check": "health endpoint",
+    "passed": true,
+    "evidence": "status=200"
+  },
+  {
+    "check": "HSTS header",
+    "passed": true,
+    "evidence": "header present/absent"
+  },
+  {
+    "check": "anti-sniffing header",
+    "passed": true,
+    "evidence": "nosniff"
+  },
+  {
+    "check": "no-store cache policy",
+    "passed": true,
+    "evidence": "no-store"
+  },
+  {
+    "check": "protected endpoint rejects anonymous access",
+    "passed": true,
+    "evidence": "status=401"
+  }
+]

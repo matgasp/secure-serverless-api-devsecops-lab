@@ -1,0 +1,6 @@
+aws_region          = "us-east-1"
+environment         = "dev"
+project_name        = "secure-serverless-api"
+enable_waf          = false
+enable_alarms       = true
+log_retention_days  = 30

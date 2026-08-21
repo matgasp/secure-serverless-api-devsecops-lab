@@ -1,0 +1,66 @@
+name: Terraform IaC
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "infra/**"
+      - "src/**"
+      - "tools/iac_policy_checks.py"
+      - "tools/package_lambda.py"
+      - ".github/workflows/terraform.yml"
+      
+  pull_request:
+    branches: [main]
+    paths:
+      - "infra/**"
+      - "src/**"
+      - "tools/iac_policy_checks.py"
+      - "tools/package_lambda.py"
+      - ".github/workflows/terraform.yml"
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: infra
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python 3.14
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+
+      - name: Create source-only validation package
+        working-directory: .
+        run: python tools/package_lambda.py --skip-dependencies
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v4.0.1
+        with:
+          terraform_version: 1.15.9
+          terraform_wrapper: false
+
+      - name: Check Terraform formatting
+        run: terraform fmt -check -recursive
+
+      - name: Initialize without remote backend
+        run: terraform init -backend=false -input=false
+
+      - name: Validate Terraform
+        run: terraform validate -no-color
+
+      - name: Run IaC policy checks
+        working-directory: .
+        run: python tools/iac_policy_checks.py

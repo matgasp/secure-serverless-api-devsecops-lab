@@ -1,0 +1,109 @@
+name: Destroy AWS
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Environment and remote state to destroy
+        required: true
+        type: choice
+        default: dev
+        options: [dev, staging, production]
+      confirmation:
+        description: Type destroy to confirm permanent resource deletion
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  TF_STATE_BUCKET: ${{ secrets.TF_STATE_BUCKET }}
+
+jobs:
+  destroy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: ${{ inputs.environment }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Validate destruction request
+        shell: bash
+        env:
+          DESTROY_CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          if [ "$DESTROY_CONFIRMATION" != "destroy" ]; then
+            echo "Confirmation must be exactly: destroy" >&2
+            exit 1
+          fi
+          if [ -z "$AWS_REGION" ]; then
+            echo "Repository variable AWS_REGION is required." >&2
+            exit 1
+          fi
+          if [ -z "$TF_STATE_BUCKET" ]; then
+            echo "Environment secret TF_STATE_BUCKET is required." >&2
+            exit 1
+          fi
+
+      - name: Set up Python 3.14
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+          cache: pip
+
+      - name: Build Lambda package required by Terraform
+        run: python tools/package_lambda.py
+
+      - name: Configure short-lived AWS credentials with OIDC
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: GitHubActionsSecureApiDestroy
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v4.0.1
+        with:
+          terraform_version: 1.15.9
+          terraform_wrapper: false
+
+      - name: Configure remote backend for GitHub
+        working-directory: infra
+        shell: bash
+        run: |
+          printf '%s\n' \
+            'terraform {' \
+            '  backend "s3" {}' \
+            '}' > backend.remote.tf
+
+      - name: Initialize the deployed environment state
+        working-directory: infra
+        shell: bash
+        run: |
+          terraform init -input=false \
+            "-backend-config=bucket=$TF_STATE_BUCKET" \
+            "-backend-config=key=secure-serverless-api/${{ inputs.environment }}/terraform.tfstate" \
+            "-backend-config=region=$AWS_REGION" \
+            "-backend-config=encrypt=true" \
+            "-backend-config=use_lockfile=true"
+
+      - name: Create destruction plan
+        working-directory: infra
+        run: >-
+          terraform plan -destroy -input=false -out=destroy.tfplan
+          -var="aws_region=${{ env.AWS_REGION }}"
+          -var="environment=${{ inputs.environment }}"
+
+      - name: Destroy the selected environment
+        working-directory: infra
+        run: terraform apply -input=false -auto-approve destroy.tfplan
+
+      - name: Record completion
+        shell: bash
+        run: echo "Environment '${{ inputs.environment }}' was destroyed." >> "$GITHUB_STEP_SUMMARY"
