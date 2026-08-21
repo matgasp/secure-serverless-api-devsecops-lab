@@ -12,12 +12,6 @@ on:
       
   pull_request:
     branches: [main]
-    paths:
-      - "infra/**"
-      - "src/**"
-      - "tools/iac_policy_checks.py"
-      - "tools/package_lambda.py"
-      - ".github/workflows/terraform.yml"
 
 permissions:
   contents: read
@@ -64,3 +58,4 @@ jobs:
       - name: Run IaC policy checks
         working-directory: .
         run: python tools/iac_policy_checks.py
+

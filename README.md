@@ -1,5 +1,9 @@
 # Secure Serverless API & DevSecOps Lab
 
+[![CI](https://github.com/matgasp/secure-serverless-api-devsecops-lab/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/matgasp/secure-serverless-api-devsecops-lab/actions/workflows/ci.yml)
+[![Terraform IaC](https://github.com/matgasp/secure-serverless-api-devsecops-lab/actions/workflows/terraform.yml/badge.svg?branch=main)](https://github.com/matgasp/secure-serverless-api-devsecops-lab/actions/workflows/terraform.yml)
+[![CodeQL SAST](https://github.com/matgasp/secure-serverless-api-devsecops-lab/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/matgasp/secure-serverless-api-devsecops-lab/actions/workflows/codeql.yml)
+
 A deliberately small AWS security lab that protects license records with per-owner authorization, administrator separation, strict input validation, least-privilege IAM, infrastructure as code, and an automated DevSecOps pipeline.
 
 The project is portfolio-ready but does not claim to be deployed. AWS resources are created only when the manual deployment workflow or Terraform is run with valid credentials.
@@ -208,3 +212,4 @@ This is a focused lab, not a production SaaS platform. It does not include a fro
 ## License
 
 MIT
+
