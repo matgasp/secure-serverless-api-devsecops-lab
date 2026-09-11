@@ -3,7 +3,7 @@ name = "secure-serverless-api-devsecops-lab"
 version = "1.0.0"
 requires-python = ">=3.14,<3.15"
 dependencies = [
-  "boto3==1.43.77",
+  "boto3==1.43.89",
 ]
 
 [tool.ruff]
